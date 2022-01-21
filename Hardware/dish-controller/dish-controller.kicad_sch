@@ -4801,16 +4801,16 @@
       (reference "J7") (unit 1) (value "Conn_01x05_Male") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical")
     )
     (path "/6b63c3f1-cb79-43f4-b3b7-e06a4c338b30/e39a47ca-19da-4b40-b8f6-a156ead87dab"
-      (reference "Q5") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-23")
+      (reference "Q5") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-323_SC-70")
     )
     (path "/6b63c3f1-cb79-43f4-b3b7-e06a4c338b30/df0cffdf-1569-4eb7-b502-10664d26fe9e"
-      (reference "Q6") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-23")
+      (reference "Q6") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-323_SC-70")
     )
     (path "/6b63c3f1-cb79-43f4-b3b7-e06a4c338b30/2e9a34ec-413a-4eb9-8ab5-e4ee251b3065"
-      (reference "Q7") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-23")
+      (reference "Q7") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-323_SC-70")
     )
     (path "/6b63c3f1-cb79-43f4-b3b7-e06a4c338b30/f34fcbdf-bf11-4279-9869-bf496bb31994"
-      (reference "Q8") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-23")
+      (reference "Q8") (unit 1) (value "BSS138") (footprint "Package_TO_SOT_SMD:SOT-323_SC-70")
     )
     (path "/46d2ad87-a2dc-439d-be03-704380280acd"
       (reference "R1") (unit 1) (value "3.3k") (footprint "Resistor_SMD:R_0603_1608Metric")
