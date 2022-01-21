@@ -1,6 +1,6 @@
 (footprint "raspberry_pi_4" (version 20211014) (generator pcbnew)
   (layer "F.Cu")
-  (tedit 61EA1DE2)
+  (tedit 61EA219D)
   (attr through_hole)
   (fp_text reference "REF**" (at 1 -2 unlocked) (layer "F.SilkS") hide
     (effects (font (size 1 1) (thickness 0.15)))
@@ -79,7 +79,7 @@
   (pad "38" thru_hole circle (at 30.91 2.23) (size 1.7 1.7) (drill 1.02) (layers *.Cu *.Mask) (tstamp 7ca71fec-e7f1-454f-9196-b80d15925fff))
   (pad "39" thru_hole circle (at 28.37 4.77) (size 1.7 1.7) (drill 1.02) (layers *.Cu *.Mask) (tstamp 4d2fd49e-2cb2-44d4-8935-68488970d97b))
   (pad "40" thru_hole circle (at 28.37 2.23) (size 1.7 1.7) (drill 1.02) (layers *.Cu *.Mask) (tstamp 93ac15d8-5f91-4361-acff-be4992b93b51))
-  (model "${INTERFEROMETER}/interferometer.pretty/3D/Pi-4_Connector.step"
+  (model "${INTERFEROMETER}/interferometer.pretty/3D/Pi-4_HEADER.iges"
     (offset (xyz 42.5 -28 16.8))
     (scale (xyz 1 1 1))
     (rotate (xyz 90 0 -180))
