@@ -1,6 +1,6 @@
 (footprint "HZIP25-P-1.00F" (version 20211014) (generator pcbnew)
   (layer "F.Cu")
-  (tedit 61E90CEA)
+  (tedit 61EA1038)
   (descr "HZIP25 Package")
   (tags "HZIP25")
   (attr through_hole)
@@ -42,7 +42,12 @@
   (pad "23" thru_hole circle (at 10 4) (size 1.5 1.5) (drill 0.7) (layers *.Cu *.Mask) (tstamp e9a9fba3-7cfa-45ca-926c-a5a8ecd7e3a4))
   (pad "24" thru_hole circle (at 11 0) (size 1.5 1.5) (drill 0.7) (layers *.Cu *.Mask) (tstamp 43f341b3-06e9-4e7a-a26e-5365b89d76bf))
   (pad "25" thru_hole circle (at 12 4) (size 1.5 1.5) (drill 0.7) (layers *.Cu *.Mask) (tstamp 315d2b15-cfe6-4672-b3ad-24773f3df12c))
-  (model "${INTERFEROMETER}/interferometer.pretty/3D/HZIP25-P-1.00F.step"
+  (model "${INTERFEROMETER}/interferometer.pretty/3D/HZIP25-P-1.00F.step" hide
+    (offset (xyz 0 11 -9.5))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
+  (model "${INTERFEROMETER}/interferometer.pretty/3D/HZIP25-P-1.00F_HEATSINK.step"
     (offset (xyz 0 11 -9.5))
     (scale (xyz 1 1 1))
     (rotate (xyz 0 0 0))
