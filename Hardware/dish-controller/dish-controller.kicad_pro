@@ -384,7 +384,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "dish-controller.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
