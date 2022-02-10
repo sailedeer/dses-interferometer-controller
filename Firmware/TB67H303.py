@@ -5,7 +5,6 @@ import RPi.GPIO as GPIO
 
 class TB67H303:
 
-
     #Functionally similar to coast, but does not depend on IN1/IN2
     def standby(self):
         GPIO.output(self.stby, GPIO.LOW)
@@ -66,7 +65,7 @@ class TB67H303:
         GPIO.setup(pwm, GPIO.OUT)
 
         #set up PWM
-        self.pwm_obj = GPIO.PWM(pwm, 1000) #PWM Frequency is 1kHz
+        self.pwm_obj = GPIO.PWM(pwm, 10000) #PWM Frequency is 10kHz
 
         #initial state
         self.standby()
