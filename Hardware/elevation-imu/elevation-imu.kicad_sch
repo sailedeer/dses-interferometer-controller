@@ -1856,7 +1856,7 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid acee4479-6f6d-41b4-b693-5e83c3878033)
   )
-  (label "SCL_HV" (at 153.67 142.875 0)
+  (label "CLK_HV" (at 153.67 142.875 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid c76f0209-6ff8-4cd3-9620-5d9266db794a)
   )
