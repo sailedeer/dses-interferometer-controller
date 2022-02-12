@@ -1,4 +1,4 @@
-# Test for the two user controllable LEDs on the board
+# Test for the two user-controllable LEDs on the board
 
 import RPi.GPIO as GPIO
 
@@ -19,4 +19,4 @@ p2.start(50)
 input('Press return to stop:')
 p1.stop()
 p2.stop()
-GPIO.cleanup
+GPIO.cleanup()
