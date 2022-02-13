@@ -12,3 +12,4 @@ ac = dut.acceleration()
 
 print(ac)
 print(np.sqrt(ac[0]**2 + ac[1]**2 + ac[2]**2))
+print(np.arctan2(-ac[0], -ac[1]) * 180/np.pi)

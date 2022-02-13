@@ -9,6 +9,7 @@ from TB67H303 import TB67H303
 dut = TB67H303(4, 27, 22, 13, 19, 16)
 
 print('Driving the azimuth motor at duty-cycle=25 in direction 1')
-dut.drive(1, 100)
+dut.setDir(1)
+dut.startMotor(25)
 input('Press return to stop:')
 

@@ -12,8 +12,7 @@ class TB67H303:
 
     #Move the motor one way (direction = 1) or the other (direction = 0
     #Output PWM is set by speed, between 0 and 100.0
-    def drive(self, direction, speed):
-        self.pwm_obj.start(speed)
+    def setDir(self, direction):
 
         if (direction):
             GPIO.output(self.in1, GPIO.LOW)
@@ -23,6 +22,15 @@ class TB67H303:
             GPIO.output(self.in1, GPIO.HIGH)
 
         GPIO.output(self.stby, GPIO.HIGH)
+
+    #Use this function to change the duty cycle without messing up the PWM 
+    #Useful for when the motor is already running
+    def setDC(self, dc):
+        self.pwm_obj.ChangeDutyCycle(dc)
+
+    #Use this function to start PWM
+    def startMotor(self, dc):
+        self.pwm_obj.start(dc)
 
     #allow motor to come to a stop: no holding force
     def coast(self):
