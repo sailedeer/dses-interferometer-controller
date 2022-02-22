@@ -15,11 +15,7 @@ See dses.science for more information on the Deep Space Exploration Society.
 Both the dish control PCB and encoder PCB have been sent out to fab. The bill of materials for each of these PCBs, as well as the system as a whole, can be found [here](https://docs.google.com/spreadsheets/d/1BclJA9Vqp6U5VNtGhfOCnUhMfViFTNw0S3vL4EeDwUc/edit?usp=sharing).
 
 ## MQTT
-<<<<<<< HEAD
 ![MQTT Network Diagram](https://github.com/sailedeer/dses-interferometer-controller/blob/mqtt/Documentation/Images/mqtt-interferometer-network-diagram.png?raw=true)
-=======
-![MQTT Network Diagram](https://github.com/sailedeer/dses-interferometer-controller/blob/mqtt/Documentation/Images/System-Overview.png?raw=true)
->>>>>>> 8514f319674e4572ec943d864e02574cc8c46aa3
 
 A high-level overview of how each MQTT client is connected to the broker, and which topics they publish and/or subscribe to.
 
