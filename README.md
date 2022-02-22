@@ -14,6 +14,11 @@ See dses.science for more information on the Deep Space Exploration Society.
 
 Both the dish control PCB and encoder PCB have been sent out to fab. The bill of materials for each of these PCBs, as well as the system as a whole, can be found [here](https://docs.google.com/spreadsheets/d/1BclJA9Vqp6U5VNtGhfOCnUhMfViFTNw0S3vL4EeDwUc/edit?usp=sharing).
 
+## MQTT
+![MQTT Network Diagram](https://github.com/sailedeer/dses-interferometer-controller/blob/mqtt/Documentation/Images/mqtt-interferometer-network-diagram.png?raw=true)
+
+A high-level overview of how each MQTT client is connected to the broker, and which topics they publish and/or subscribe to.
+
 ## Hardware Setup
 To view/edit the KiCAD schematic, with KiCAD 6 open, go to Preferences -> Configure Paths, and add a new environment variable called "EWB" that points to dses-interferometer-controller\Hardware\lib.
 
