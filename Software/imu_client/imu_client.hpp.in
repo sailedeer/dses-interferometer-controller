@@ -1,3 +1,0 @@
-// the configured options and settings for Tutorial
-#define imu_client_VERSION_MAJOR @imu_client_VERSION_MAJOR@
-#define imu_client_VERSION_MINOR @imu_client_VERSION_MINOR@
