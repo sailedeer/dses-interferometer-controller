@@ -6,18 +6,19 @@
 #include <thread>
 #include <chrono>
 #include <mqtt/async_client.h>
+// TODO: implement kernel drivers + chardevices for these
 // #include <if/lsm6ds032.h>
 // #include <if/tbh67h303.h>
 
 using namespace std;
 
-// TODO: write config file which this program
-const string SERVER_ADDRESS("ssl://localhost:14514");
+// TODO: write config file
+const string SERVER_ADDRESS("tcp://localhost:14541");
 const string CLIENT_ID("if_test");
 
 const string SUB_TOPIC_AZ("cmd/az/" + CLIENT_ID);
 const string SUB_TOPIC_EL("cmd/el/" + CLIENT_ID);
-const string SUB_TOPIC_MODE("cmd/mode" + CLIENT_ID);
+const string SUB_TOPIC_MODE("cmd/mode/" + CLIENT_ID);
 const string SUB_TOPIC_ROLLCALL("cmd/rollcall");
 const string PUB_TOPIC_IMU("sensors/imu/" + CLIENT_ID);
 const string PUB_TOPIC_ENC("sensors/enc/" + CLIENT_ID);
@@ -25,7 +26,7 @@ const string PUB_TOPIC_ROLLCALL("rollcall");
 
 const int QOS = 1;
 
-const int SENS_RAND_MAX = 1024;
+const int SENS_RAND_MAX = 360;
 
 volatile bool asleep = false;
 
@@ -56,8 +57,9 @@ void imu_publisher(mqtt::async_client_ptr client /*, if::LSM6DS032_ptr imu */) {
         auto then = chrono::steady_clock::now() + chrono::seconds(5);
         // TODO: collect elevation/azimuthal data from IMU,
         // for now just publish a random number
-        random_int = rand() % SENS_RAND_MAX;
-        client->publish(PUB_TOPIC_IMU, &random_int, sizeof(int))->wait();
+        float r = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/SENS_RAND_MAX));
+        string payload("imu " + to_string(r));
+        client->publish(PUB_TOPIC_IMU, payload)->wait();
         {
             lock_guard<mutex> lk(die_mtx);
             local_die = die;
@@ -86,8 +88,9 @@ void enc_publisher(mqtt::async_client_ptr client) {
         auto then = chrono::steady_clock::now() + chrono::seconds(5);
         // TODO: collect data from encoder,
         // for now just publish a random number
-        random_int = rand() % SENS_RAND_MAX;
-        client->publish(PUB_TOPIC_ENC, &random_int, sizeof(int))->wait();
+        float r = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/SENS_RAND_MAX));
+        string payload("encoder " + to_string(r));
+        client->publish(PUB_TOPIC_ENC, payload)->wait();
         {
             lock_guard<mutex> lk(die_mtx);
             local_die = die;
@@ -106,11 +109,14 @@ void command_processor(mqtt::async_client_ptr client) {
     bool local_die = false;
     while (true) {
         msg = client->consume_message();
+        cout << "Processing new message..." <<endl;
         if (!msg) {
             continue;
         }
 
         msg_topic = msg->get_topic();
+        cout << "Received topic: " << msg_topic << endl;
+        cout << "Message on received topic: " << msg->get_payload_str() << endl;
         if (msg_topic == SUB_TOPIC_AZ) {
             cout << "Standin for processing azimuth command...\n";
         } else if (msg_topic == SUB_TOPIC_EL) {
@@ -134,8 +140,6 @@ void command_processor(mqtt::async_client_ptr client) {
             } else if (cmd == "track") {
                 lock_guard<mutex> lk(track_mtx);
                 // begin tracking current position
-                // TODO: maybe include lat and long in this
-                // in case we want to do some kind 
                 track = true;
             } else if (cmd == "hold") {
                 // hold current position
@@ -172,17 +176,20 @@ int main(int argc, char **argv) {
                     .automatic_reconnect(chrono::seconds(2), chrono::seconds(30))
                     .finalize();
 
-    // collections for topics + their corresponding qualities of service
-    auto topics = mqtt::string_collection::create({SUB_TOPIC_AZ, SUB_TOPIC_EL, SUB_TOPIC_MODE, SUB_TOPIC_ROLLCALL});
-    const vector<int> QOS{2, 2, 2, 2};
-
     try {
         // start consuming in case we're re-hydrating
         client->start_consuming();
-        auto rsp = client->connect(conn_opts)->get_connect_response();
+
+        cout << "Attempting to connect to: " << SERVER_ADDRESS << '\n';
+        auto rsp = client->connect()->get_connect_response();
+        cout << "Successfully connected!\n";
 
         if (!rsp.is_session_present()) {
-            client->subscribe(topics, QOS);
+            cout << "Re-hydrating...\n";
+            client->subscribe(SUB_TOPIC_AZ, 1);
+            client->subscribe(SUB_TOPIC_EL, 1);
+            client->subscribe(SUB_TOPIC_MODE, 1);
+            client->subscribe(SUB_TOPIC_ROLLCALL, 1);
         }
 
         // publish the client ID onto the rollcall topic so the webserver knows we're alive
