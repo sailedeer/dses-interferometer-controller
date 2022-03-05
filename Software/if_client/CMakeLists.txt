@@ -10,7 +10,13 @@ configure_file(if_client.version if_client.hpp)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# dependencies
+find_package(PahoMqttCpp REQUIRED)
+
 # add the executable
 add_executable(if_client if_client.cpp)
+
+target_link_libraries(if_client paho-mqttpp3 paho-mqtt3as pthread)
+
 
 target_include_directories(if_client PUBLIC "${PROJECT_BINARY_DIR}")
