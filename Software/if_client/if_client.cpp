@@ -24,7 +24,7 @@ const string PUB_TOPIC_IMU("sensors/imu/" + CLIENT_ID);
 const string PUB_TOPIC_ENC("sensors/enc/" + CLIENT_ID);
 const string PUB_TOPIC_ROLLCALL("rollcall");
 
-const int QOS = 1;
+const int CMD_QOS = 1;
 
 const int SENS_RAND_MAX = 360;
 
@@ -45,7 +45,6 @@ void imu_publisher(mqtt::async_client_ptr client /*, if::LSM6DS032_ptr imu */) {
     int random_int;
     bool local_die;
     
-    srand(time(0));
     while (true) {
         {
             unique_lock<mutex> lk(asleep_mtx);
@@ -76,7 +75,6 @@ void enc_publisher(mqtt::async_client_ptr client) {
     int random_int;
     bool local_die;
     
-    srand(time(0));
     while (true) {
         {
             unique_lock<mutex> lk(asleep_mtx);
@@ -107,6 +105,7 @@ void command_processor(mqtt::async_client_ptr client) {
     mqtt::const_message_ptr msg;
     string msg_topic;
     bool local_die = false;
+    bool local_asleep = true;
     while (true) {
         msg = client->consume_message();
         cout << "Processing new message..." <<endl;
@@ -135,6 +134,13 @@ void command_processor(mqtt::async_client_ptr client) {
                 // bang pots and pans
                 asleep_cv.notify_all();
             } else if (cmd == "exit") {
+                {
+                    lock_guard<mutex> lk(asleep_mtx);
+                    asleep = false;
+                }
+
+                // bang pots and pans
+                asleep_cv.notify_all();
                 lock_guard<mutex> lk(die_mtx);
                 die = true;
             } else if (cmd == "track") {
@@ -176,6 +182,11 @@ int main(int argc, char **argv) {
                     .automatic_reconnect(chrono::seconds(2), chrono::seconds(30))
                     .finalize();
 
+    auto topics = mqtt::string_collection::create({SUB_TOPIC_AZ, SUB_TOPIC_EL, SUB_TOPIC_MODE, SUB_TOPIC_ROLLCALL});
+    vector<int> qos{CMD_QOS, CMD_QOS, CMD_QOS, CMD_QOS};
+
+    srand(time(0));
+
     try {
         // start consuming in case we're re-hydrating
         client->start_consuming();
@@ -186,10 +197,7 @@ int main(int argc, char **argv) {
 
         if (!rsp.is_session_present()) {
             cout << "Re-hydrating...\n";
-            client->subscribe(SUB_TOPIC_AZ, 1);
-            client->subscribe(SUB_TOPIC_EL, 1);
-            client->subscribe(SUB_TOPIC_MODE, 1);
-            client->subscribe(SUB_TOPIC_ROLLCALL, 1);
+            client->subscribe(topics, qos);
         }
 
         // publish the client ID onto the rollcall topic so the webserver knows we're alive
@@ -208,6 +216,7 @@ int main(int argc, char **argv) {
         cerr << ex.what() << endl;
         return EXIT_FAILURE;
     }
+
     cout << "Exiting..." << endl;
     return EXIT_SUCCESS;
 }
