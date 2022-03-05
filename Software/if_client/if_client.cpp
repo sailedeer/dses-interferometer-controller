@@ -63,7 +63,7 @@ void imu_publisher(mqtt::async_client_ptr client /*, if::LSM6DS032_ptr imu */) {
             lock_guard<mutex> lk(die_mtx);
             local_die = die;
         }
-        if (die) {
+        if (local_die) {
             break;
         } else {
             this_thread::sleep_until(then);
@@ -93,7 +93,7 @@ void enc_publisher(mqtt::async_client_ptr client) {
             lock_guard<mutex> lk(die_mtx);
             local_die = die;
         }
-        if (die) {
+        if (local_die) {
             break;
         } else {
             this_thread::sleep_until(then);
