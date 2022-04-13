@@ -13,6 +13,13 @@
 #include <linux/uaccess.h>
 #include <linux/ioctl.h>
 
+/*
+*   This major number falls into the local/experimental range
+*   as specified by the LANANA Device List here:
+*   http://mirrors.mit.edu/kernel/linux/docs/lanana/device-list/devices-2.6.txt
+*/
+#define TBH67H303_MAJOR_NUMBER 242
+
 MODULE_AUTHOR("sailedeer");
 MODULE_LICENSE("GPL");
 
