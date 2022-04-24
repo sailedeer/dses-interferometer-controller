@@ -4,9 +4,9 @@
 #include <linux/ioctl.h>
 
 struct vector3d {
-	signed short x;
-	signed short y;
-	signed short z;
+	__s16		x;
+	__s16		y;
+	__s16		z;
 };
 
 struct motion_data {
@@ -20,7 +20,7 @@ struct motion_data {
 
 #define LSM_R_GYRO                  _IOR(LSM_MAGIC, 2, struct vector3d)
 
-#define LSM_R_REG                   _IOR(LSM_MAGIC, 3, unsigned char)
-#define LSM_W_REG                   _IOW(LSM_MAGIC, 3, unsigned char)
+#define LSM_R_REG                   _IOR(LSM_MAGIC, 3, __u8)
+#define LSM_W_REG                   _IOWR(LSM_MAGIC, 3, __u8)
 
 #endif  // _LSM_HEADER

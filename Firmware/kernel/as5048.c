@@ -27,7 +27,10 @@
 
 #define BUFSIZE					8
 
-#define DIR_BIT					BIT(7)
+#define DIR_BIT					BIT(6)
+
+#define MSB_16(addr)			((addr & 0xFF00) >> 8)
+#define LSB_16(addr)			(addr & 0xFF)
 
 struct as_data {
 	// character device instance for this device
@@ -81,16 +84,20 @@ static ssize_t as5048_write(struct file *filp, const char __user *buf,
 								size_t count, loff_t *poff) {
 	struct as_data *as;
 	ssize_t status;
+	struct as5048_reg_io *io;
 	unsigned long missing;
 
-	if (count > BUFSIZE) {
+	if (count != sizeof(struct as5048_reg_io)) {
 		return -EMSGSIZE;
 	}
 
 	as = filp->private_data;
-	missing = copy_from_user(as->tx, buf, count);
+	missing = copy_from_user(io, buf, count);
 	if (missing == 0) {
-		as->tx[0] &= ~DIR_BIT;
+		as->tx[0] = MSB_16(io->addr);
+		as->tx[1] = LSB_16(io->addr);
+		as->tx[2] = MSB_16(io->value);
+		as->tx[3] = LSB_16(io->value);
 		status = spi_write(as->spi_dev, as->tx, count);
 	} else {
 		status = -EFAULT;
@@ -114,8 +121,8 @@ static ssize_t as5048_read(struct file *filp, char __user *buf,
 	}
 
 	as = filp->private_data;
-    as->tx[0] = ((MAG_ADDR & 0xFF) >> 8) | (1 << 6);
-    as->tx[1] = MAG_ADDR & 0xFF;
+    as->tx[0] = MSB_16(MAG_ADDR) | DIR_BIT;
+    as->tx[1] = LSB_16(MAG_ADDR);
 
     // use write/read wrapper since CS needs to be de-selected every 16 bytes on this chip
     status = spi_write_then_read(as->spi_dev, as->tx, 2, as->rx, 2);
@@ -124,14 +131,14 @@ static ssize_t as5048_read(struct file *filp, char __user *buf,
     }
     memcpy(&data_temp, as->rx, 2);
 
-    as->tx[0] = ((ANGLE_ADDR & 0xFF) >> 8) | (1 << 6);
-    as->tx[1] = ANGLE_ADDR & 0xFF;
+    as->tx[0] = MSB_16(ANGLE_ADDR) | DIR_BIT;
+    as->tx[1] = LSB_16(ANGLE_ADDR);
     status = spi_write_then_read(as->spi_dev, as->tx, 2, as->rx, 2);
     if (status < 0) {
         return status;
     }
-    memcpy(&data.mag, as->rx, 2);
-    memcpy(&data.angle, &data_temp, 2);
+    memcpy(&data.angle, as->rx, 2);
+    memcpy(&data.mag, &data_temp, 2);
 
     missing = copy_to_user(buf, &data, sizeof(struct position_data));
     if (missing == 0) {
@@ -144,20 +151,39 @@ static ssize_t as5048_read(struct file *filp, char __user *buf,
 // fine grained commands for manipulating device config
 static ssize_t as5048_ioctl(struct file * filp, unsigned int cmd, unsigned long arg) {
     struct as_data *as;
+	struct as5048_reg_io io;
+	int status;
     if (_IOC_TYPE(cmd) != AS_MAGIC) {
         return -ENOTTY;
     }
 
     as = filp->private_data;
+	status = copy_from_user(&io, (struct as5048_reg_io __user *) arg, sizeof(struct as5048_reg_io));
+
+	if (status < 0) {
+		return status;
+	}
+
+	as->tx[0] = MSB_16(io.addr);
+	as->tx[1] = LSB_16(io.addr);
 
     switch (cmd) {
-        case AS_R_REG:
-            break;
         case AS_W_REG:
+			as->tx[0] &= ~(DIR_BIT);
+			as->tx[3] = MSB_16(io.value);
+			as->tx[4] = LSB_16(io.value);
+			status = spi_write(as->spi_dev, as->tx, 4);
+            break;
+        case AS_R_REG:
+			as->tx[0] |= DIR_BIT;
+			status = spi_write_then_read(as->spi_dev, as->tx, 2, as->rx, 2);
+			if (status == 0) {
+				status = copy_to_user((void *)arg, as->rx, 2);
+			}
             break;
     }
 
-	return 0;
+	return status;
 }
 
 static int as5048_release(struct inode *inode, struct file *filp) {
@@ -203,7 +229,6 @@ static int as5048_probe(struct spi_device *spi_dev) {
 	dev_t			devt;
 	struct device 	*dev;
 	struct as_data *as;
-	struct spi_transfer msg;
 
 	// allocate data for our driver
 	as = kzalloc(sizeof(struct as_data), GFP_KERNEL);
