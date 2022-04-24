@@ -49,6 +49,8 @@ static struct class *lsm_class = NULL;
 static int lsm6ds032_open(struct inode *inode, struct file *filp) {
 	struct lsm_data *lsm = NULL;
 
+	pr_info("Inside lsm6ds032 open handler.");
+
 	lsm = container_of(inode->i_cdev, struct lsm_data, char_dev);
 	if (!lsm) {
 		return -ENODEV;
@@ -80,21 +82,23 @@ static int lsm6ds032_open(struct inode *inode, struct file *filp) {
 static ssize_t lsm6ds032_write(struct file *filp, const char __user *buf,
 								size_t count, loff_t *poff) {
 	struct lsm_data *lsm;
-	ssize_t status;
+	ssize_t status = 0;
 	unsigned long missing;
 
-	if (count > BUFSIZE) {
-		return -EMSGSIZE;
-	}
+	pr_info("Inside lsm6ds032 write handler.");
 
-	lsm = filp->private_data;
-	missing = copy_from_user(lsm->tx, buf, count);
-	if (missing == 0) {
-		lsm->tx[0] &= ~DIR_BIT;
-		status = spi_write(lsm->spi_dev, lsm->tx, count);
-	} else {
-		status = -EFAULT;
-	}
+	// if (count > BUFSIZE) {
+	// 	return -EMSGSIZE;
+	// }
+
+	// lsm = filp->private_data;
+	// missing = copy_from_user(lsm->tx, buf, count);
+	// if (missing == 0) {
+	// 	lsm->tx[0] &= ~DIR_BIT;
+	// 	status = spi_write(lsm->spi_dev, lsm->tx, count);
+	// } else {
+	// 	status = -EFAULT;
+	// }
 	return status;
 }
 
@@ -109,62 +113,67 @@ static ssize_t lsm6ds032_read(struct file *filp, char __user *buf,
 	static const unsigned char OUTX_L_G_ADDR = 0x22;
 	static const unsigned char CTRL3_C_ADDR 	= 0x12;
 
-	if (count != sizeof(struct motion_data)) {
-		return -EMSGSIZE;
-	}
+	pr_info("Inside lsm6ds032 read handler.");
 
-	lsm = filp->private_data;
+	// if (count != sizeof(struct motion_data)) {
+	// 	return -EMSGSIZE;
+	// }
 
-	// read contents of CTRL3_C
-	lsm->tx[0] |= DIR_BIT;
+	// lsm = filp->private_data;
 
-	status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx, 1);
-	if (status < 0) {
-		return status;
-	}
+	// // read contents of CTRL3_C
+	// lsm->tx[0] |= DIR_BIT;
 
-	// ensure address gets incremented on our next transfer
-	ctrl_3_c_old = lsm->rx[0];
-	lsm->tx[0] &= ~DIR_BIT;
-	lsm->tx[1] = lsm->rx[0] | BIT(7);
+	// status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx, 1);
+	// if (status < 0) {
+	// 	return status;
+	// }
 
-	status = spi_write(lsm->spi_dev, lsm->tx, 2);
-	if (status < 0) {
-		return status;
-	}
+	// // ensure address gets incremented on our next transfer
+	// ctrl_3_c_old = lsm->rx[0];
+	// lsm->tx[0] &= ~DIR_BIT;
+	// lsm->tx[1] = lsm->rx[0] | BIT(7);
 
-	lsm->tx[0] = OUTX_L_G_ADDR | DIR_BIT;
+	// status = spi_write(lsm->spi_dev, lsm->tx, 2);
+	// if (status < 0) {
+	// 	return status;
+	// }
 
-	status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx,
-									sizeof(struct motion_data));
-	if (status < 0) {
-		return status;
-	}
+	// lsm->tx[0] = OUTX_L_G_ADDR | DIR_BIT;
 
-	data.gyro.x = lsm->rx[0] | (lsm->rx[1] << 8);
-	data.gyro.y = lsm->rx[2] | (lsm->rx[3] << 8);
-	data.gyro.z = lsm->rx[4] | (lsm->rx[5] << 8);
+	// status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx,
+	// 								sizeof(struct motion_data));
+	// if (status < 0) {
+	// 	return status;
+	// }
 
-	data.accel.x = lsm->rx[6] | (lsm->rx[7] << 8);
-	data.accel.y = lsm->rx[8] | (lsm->rx[9] << 8);
-	data.accel.z = lsm->rx[10] | (lsm->rx[11] << 8);
+	// data.gyro.x = lsm->rx[0] | (lsm->rx[1] << 8);
+	// data.gyro.y = lsm->rx[2] | (lsm->rx[3] << 8);
+	// data.gyro.z = lsm->rx[4] | (lsm->rx[5] << 8);
 
-	missing = copy_to_user(buf, &data, sizeof(struct motion_data));
-	if (missing == 0) {
-		return 0;
-	} else {
-		return -EIO;
-	}
+	// data.accel.x = lsm->rx[6] | (lsm->rx[7] << 8);
+	// data.accel.y = lsm->rx[8] | (lsm->rx[9] << 8);
+	// data.accel.z = lsm->rx[10] | (lsm->rx[11] << 8);
+
+	// missing = copy_to_user(buf, &data, sizeof(struct motion_data));
+	// if (missing == 0) {
+	// 	return 0;
+	// } else {
+	// 	return -EIO;
+	// }
+	return 0;
 }
 
 // fine grained commands for manipulating device config
 static ssize_t lsm6ds032_ioctl(struct file * filp, unsigned int cmd, unsigned long arg) {
-		
+	pr_info("Inside lsm6ds032 ioctl handler.");
 	return 0;
 }
 
 static int lsm6ds032_release(struct inode *inode, struct file *filp) {
 	struct lsm_data *lsm;
+
+	pr_info("Inside lsm6ds032 close handler.");
 	lsm = filp->private_data;
 	filp->private_data = NULL;
 
