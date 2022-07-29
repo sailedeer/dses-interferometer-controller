@@ -1,5 +1,5 @@
-#ifndef _AS_HEADER
-#define _AS_HEADER
+#ifndef _AS_H
+#define _AS_H
 
 #include <linux/types.h>
 #include <linux/ioctl.h>
@@ -19,4 +19,4 @@ struct as5048_reg_io {
 #define AS_R_REG                    _IOWR(AS_MAGIC, 1, __u16)
 #define AS_W_REG                    _IOW(AS_MAGIC, 1, __u32)
 
-#endif  // _AS_HEADER
+#endif  // _AS_H

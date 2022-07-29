@@ -21,7 +21,7 @@
 *   as specified by the LANANA Device List here:
 *   http://mirrors.mit.edu/kernel/linux/docs/lanana/device-list/devices-2.6.txt
 */
-#define LSM_MAJOR				240
+#define LSM_MAJOR				61
 #define LSM_FIRST_MINOR			0
 #define N_MINORS				1
 
@@ -39,17 +39,53 @@ struct lsm_data {
 	// tx/rx buffers
 	unsigned char		*tx;
 	unsigned char		*rx;
-
-	// TODO: do we care about any other data?
+	
+	// cached device config info
+	lsm6ds032_accel_scale_t accel_scale;
+	lsm6ds032_gyro_scale_t gyro_scale;
+	lsm6ds032_odr_t accel_odr;
+	lsm6ds032_odr_t gyro_odr;
+	lsm6ds032_gyro_lpf_bw_t gyro_lpf_bw;
 };
 
 // class for our character device
 static struct class *lsm_class = NULL;
 
+static inline int lsm6ds032_configure(struct lsm_data *lsm) {
+	int status;
+
+	// TODO: masks for register values
+	lsm->tx[0] = LSM6DS032_CTRL1_XL_ADDR;
+	lsm->tx[1] = 0b01000000;
+
+	status = spi_write(lsm->spi_dev, lsm->tx, 2);
+	if (status < 0) {
+		return status;
+	}
+
+	lsm->tx[0] = LSM6DS032_CTRL2_G_ADDR;
+	lsm->tx[1] = 0b01000010;
+	status = spi_write(lsm->spi_dev, lsm->tx, 2);
+	if (status < 0) {
+		return status;
+	}
+
+	lsm->tx[0] = LSM6DS032_CTRL4_C_ADDR;
+	lsm->tx[1] = 0b00101010;
+	status = spi_write(lsm->spi_dev, lsm->tx, 2);
+	if (status < 0) {
+		return status;
+	}
+
+	lsm->tx[0] = LSM6DS032_CTRL6_C_ADDR;
+	lsm->tx[1] = 0b00000111;
+	status = spi_write(lsm->spi_dev, lsm->tx, 2);
+	return status;
+}
+
 static int lsm6ds032_open(struct inode *inode, struct file *filp) {
 	struct lsm_data *lsm = NULL;
-
-	pr_info("Inside lsm6ds032 open handler.");
+	int status;
 
 	lsm = container_of(inode->i_cdev, struct lsm_data, char_dev);
 	if (!lsm) {
@@ -73,9 +109,18 @@ static int lsm6ds032_open(struct inode *inode, struct file *filp) {
 	}
 	filp->private_data = lsm;
 
+	// configure the device for normal operation
+	status = lsm6ds032_configure(lsm);
+	if (status < 0) {
+		kfree(lsm->tx);
+		kfree(lsm->rx);
+		pr_err("Failed to configure LSM6DS032 for normal operation.");
+		return status;
+	}
+
 	// no seeking, behave like a stream
 	stream_open(inode, filp);
-	return 0;
+	return status;
 }
 
 // write to arbitrary address
@@ -85,20 +130,18 @@ static ssize_t lsm6ds032_write(struct file *filp, const char __user *buf,
 	ssize_t status = 0;
 	unsigned long missing;
 
-	pr_info("Inside lsm6ds032 write handler.");
+	if (count > BUFSIZE) {
+		return -EMSGSIZE;
+	}
 
-	// if (count > BUFSIZE) {
-	// 	return -EMSGSIZE;
-	// }
-
-	// lsm = filp->private_data;
-	// missing = copy_from_user(lsm->tx, buf, count);
-	// if (missing == 0) {
-	// 	lsm->tx[0] &= ~DIR_BIT;
-	// 	status = spi_write(lsm->spi_dev, lsm->tx, count);
-	// } else {
-	// 	status = -EFAULT;
-	// }
+	lsm = filp->private_data;
+	missing = copy_from_user(lsm->tx, buf, count);
+	if (missing == 0) {
+		lsm->tx[0] &= ~DIR_BIT;
+		status = spi_write(lsm->spi_dev, lsm->tx, count);
+	} else {
+		status = -EFAULT;
+	}
 	return status;
 }
 
@@ -108,81 +151,86 @@ static ssize_t lsm6ds032_read(struct file *filp, char __user *buf,
 	struct lsm_data *lsm;
 	struct motion_data data;
 	ssize_t status;
-	unsigned long missing;
 	unsigned char ctrl_3_c_old;
-	static const unsigned char OUTX_L_G_ADDR = 0x22;
-	static const unsigned char CTRL3_C_ADDR 	= 0x12;
+	unsigned long missing;
 
-	pr_info("Inside lsm6ds032 read handler.");
+	if (count != sizeof(struct motion_data)) {
+		return -EMSGSIZE;
+	}
 
-	// if (count != sizeof(struct motion_data)) {
-	// 	return -EMSGSIZE;
-	// }
+	lsm = filp->private_data;
 
-	// lsm = filp->private_data;
+	// read contents of CTRL3_C
+	lsm->tx[0] = DIR_BIT | LSM6DS032_CTRL3_C_ADDR;
 
-	// // read contents of CTRL3_C
-	// lsm->tx[0] |= DIR_BIT;
+	status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx, 1);
+	if (status < 0) {
+		return status;
+	}
 
-	// status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx, 1);
-	// if (status < 0) {
-	// 	return status;
-	// }
+	// ensure address gets incremented on our next transfer
+	ctrl_3_c_old = lsm->rx[0];
+	lsm->tx[0] &= ~DIR_BIT;
+	lsm->tx[1] = ctrl_3_c_old | BIT(2);
 
-	// // ensure address gets incremented on our next transfer
-	// ctrl_3_c_old = lsm->rx[0];
-	// lsm->tx[0] &= ~DIR_BIT;
-	// lsm->tx[1] = lsm->rx[0] | BIT(7);
+	status = spi_write(lsm->spi_dev, lsm->tx, 2);
+	if (status < 0) {
+		return status;
+	}
 
-	// status = spi_write(lsm->spi_dev, lsm->tx, 2);
-	// if (status < 0) {
-	// 	return status;
-	// }
+	lsm->tx[0] = LSM6DS032_OUTX_L_G_ADDR | DIR_BIT;
 
-	// lsm->tx[0] = OUTX_L_G_ADDR | DIR_BIT;
+	status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx,
+									12);
+	if (status < 0) {
+		return status;
+	}
 
-	// status = spi_write_then_read(lsm->spi_dev, lsm->tx, 1, lsm->rx,
-	// 								sizeof(struct motion_data));
-	// if (status < 0) {
-	// 	return status;
-	// }
+	data.gyro.x = lsm->rx[0] | (lsm->rx[1] << 8);
+	data.gyro.y = lsm->rx[2] | (lsm->rx[3] << 8);
+	data.gyro.z = lsm->rx[4] | (lsm->rx[5] << 8);
 
-	// data.gyro.x = lsm->rx[0] | (lsm->rx[1] << 8);
-	// data.gyro.y = lsm->rx[2] | (lsm->rx[3] << 8);
-	// data.gyro.z = lsm->rx[4] | (lsm->rx[5] << 8);
+	data.accel.x = lsm->rx[6]| (lsm->rx[7] << 8);
+	data.accel.y = lsm->rx[8]| (lsm->rx[9] << 8);
+	data.accel.z =lsm->rx[10] | (lsm->rx[11] << 8);
 
-	// data.accel.x = lsm->rx[6] | (lsm->rx[7] << 8);
-	// data.accel.y = lsm->rx[8] | (lsm->rx[9] << 8);
-	// data.accel.z = lsm->rx[10] | (lsm->rx[11] << 8);
-
-	// missing = copy_to_user(buf, &data, sizeof(struct motion_data));
-	// if (missing == 0) {
-	// 	return 0;
-	// } else {
-	// 	return -EIO;
-	// }
-	return 0;
+	missing = copy_to_user(buf, &data, sizeof(struct motion_data));
+	if (missing == 0) {
+		return 0;
+	} else {
+		return -EIO;
+	}
 }
 
 // fine grained commands for manipulating device config
-static ssize_t lsm6ds032_ioctl(struct file * filp, unsigned int cmd, unsigned long arg) {
-	pr_info("Inside lsm6ds032 ioctl handler.");
-	return 0;
+static long lsm6ds032_ioctl(struct file * filp, unsigned int cmd, unsigned long arg) {
+	int status;
+	struct lsm_data *lsm;
+	struct lsm6ds032_reg_io io;
+
+	if (_IOC_TYPE(cmd) != LSM_MAGIC) {
+		return -ENODEV;
+	}
+
+	lsm = filp->private_data;
+	status = copy_from_user(&io, (struct lsm6ds032_reg_io __user *) arg, sizeof(struct lsm6ds032_reg_io));
+
+	switch (cmd) {
+		case LSM_TXER:
+			break;
+	}
 }
 
 static int lsm6ds032_release(struct inode *inode, struct file *filp) {
 	struct lsm_data *lsm;
 
-	pr_info("Inside lsm6ds032 close handler.");
 	lsm = filp->private_data;
-	filp->private_data = NULL;
 
 	kfree(lsm->tx);
 	lsm->tx = NULL;
 
 	kfree(lsm->rx);
 	lsm->rx = NULL;
-	kfree(lsm);
 	return 0;
 }
 
@@ -210,15 +258,31 @@ static const struct of_device_id lsm6ds032_dt_ids[] = {
 MODULE_DEVICE_TABLE(of, lsm6ds032_dt_ids);
 #endif
 
+static inline int lsm6ds032_who_am_i(struct spi_device *spi_dev) {
+	int status;
+	char tx_buf[BUFSIZE];
+	char rx_buf[BUFSIZE];
+
+	tx_buf[0] = LSM6DS032_WHO_AM_I_ADDR | DIR_BIT;
+
+	// status = spi_sync_transfer(spi_dev, msg, 1);
+	// check the WHO_AM_I register before proceeding
+	status = spi_write_then_read(spi_dev, tx_buf, 1, rx_buf, 1);
+	if (status < 0) {
+		return status;
+	}
+	if (rx_buf[0] != LSM6DS032_WHO_AM_I) {
+		pr_err("WHO_AM_I check failed. Invalid value: %x: ", rx_buf[0]);
+		return -ENODEV;
+	}
+	return status;
+}
+
 static int lsm6ds032_probe(struct spi_device *spi_dev) {
 	int				status;
 	dev_t			devt;
 	struct device 	*dev;
 	struct lsm_data *lsm;
-	struct spi_transfer msg;
-
-	static const unsigned char WHO_AM_I_ADDR = 0x0F;
-	static const unsigned char WHO_AM_I = 0x6C;
 
 	// allocate data for our driver
 	lsm = kzalloc(sizeof(struct lsm_data), GFP_KERNEL);
@@ -226,19 +290,11 @@ static int lsm6ds032_probe(struct spi_device *spi_dev) {
 		return -ENOMEM;
 	}
 
-	lsm->tx[0] = WHO_AM_I_ADDR | DIR_BIT;
-
-	// check the WHO_AM_I register before proceeding
-	status = spi_write_then_read(spi_dev, lsm->tx, 1, lsm->rx, 1);
+	status = lsm6ds032_who_am_i(spi_dev);
 	if (status < 0) {
-		pr_err("Failed to check WHO_AM_I register.");
+		pr_info("Check wiring and connections with LSM6DS032.");
 		kfree(lsm);
 		return status;
-	}
-	if (lsm->rx[0] != WHO_AM_I) {
-		pr_err("WHO_AM_I check failed.");
-		kfree(lsm);
-		return -ENODEV;
 	}
 
 	devt = MKDEV(LSM_MAJOR, LSM_FIRST_MINOR);
@@ -275,6 +331,7 @@ static struct spi_driver lsm_spi_driver = {
 	.driver = {
 		.name =			DEV_NAME,
 		.owner = 		THIS_MODULE,
+		.of_match_table = lsm6ds032_dt_ids,
 	},
 	.probe =		lsm6ds032_probe,
 	.remove =		lsm6ds032_remove,
@@ -295,6 +352,7 @@ static int __init lsm6ds032_init(void) {
 
 	lsm_class = class_create(THIS_MODULE, DEV_NAME);
 	if (IS_ERR(lsm_class)) {
+		pr_err("Failed to create lsm6ds032 class.");
 		unregister_chrdev_region(devt, N_MINORS);
 		return PTR_ERR(lsm_class);
 	}
@@ -308,7 +366,7 @@ static int __init lsm6ds032_init(void) {
 	}
 
     pr_info("lsm6ds032 Device Driver initialized.");
-    return 0;
+    return status;
 }
 
 static void __exit lsm6ds032_exit(void) {

@@ -21,7 +21,7 @@
 *   as specified by the LANANA Device List here:
 *   http://mirrors.mit.edu/kernel/linux/docs/lanana/device-list/devices-2.6.txt
 */
-#define AS_MAJOR				240
+#define AS_MAJOR				60
 #define AS_FIRST_MINOR			0
 #define N_MINORS				1
 
@@ -91,21 +91,25 @@ static ssize_t as5048_write(struct file *filp, const char __user *buf,
 
 	pr_info("Inside as5048 write handler.");
 
-	// if (count != sizeof(struct as5048_reg_io)) {
-	// 	return -EMSGSIZE;
-	// }
+	if (count != sizeof(struct as5048_reg_io)) {
+		return -EMSGSIZE;
+	}
 
-	// as = filp->private_data;
-	// missing = copy_from_user(io, buf, count);
-	// if (missing == 0) {
-	// 	as->tx[0] = MSB_16(io->addr);
-	// 	as->tx[1] = LSB_16(io->addr);
-	// 	as->tx[2] = MSB_16(io->value);
-	// 	as->tx[3] = LSB_16(io->value);
-	// 	status = spi_write(as->spi_dev, as->tx, count);
-	// } else {
-	// 	status = -EFAULT;
-	// }
+	as = filp->private_data;
+	missing = copy_from_user(io, buf, count);
+	if (missing == 0) {
+		as->tx[0] = MSB_16(io->addr);
+		as->tx[1] = LSB_16(io->addr);
+		as->tx[2] = MSB_16(io->value);
+		as->tx[3] = LSB_16(io->value);
+		status = spi_write(as->spi_dev, as->tx, 2);
+		if (status < 0) {
+			return status;
+		}
+		status = spi_write(as->spi_dev, &as->tx[2], 2);
+	} else {
+		status = -EFAULT;
+	}
 	return status;
 }
 
@@ -120,78 +124,94 @@ static ssize_t as5048_read(struct file *filp, char __user *buf,
     static const unsigned short ANGLE_ADDR = 0x3FFF;
     static const unsigned short MAG_ADDR = 0x3FFE;
 
-	pr_info("Inside as5048 read handler.");
+	if (count != sizeof(struct position_data)) {
+		return -EMSGSIZE;
+	}
 
-	// if (count != sizeof(struct position_data)) {
-	// 	return -EMSGSIZE;
-	// }
+	as = filp->private_data;
+    as->tx[0] = MSB_16(MAG_ADDR) | DIR_BIT;
+    as->tx[1] = LSB_16(MAG_ADDR);
 
-	// as = filp->private_data;
-    // as->tx[0] = MSB_16(MAG_ADDR) | DIR_BIT;
-    // as->tx[1] = LSB_16(MAG_ADDR);
+    // need to write, then read since CS needs to be deselected every 16 bytes
+    status = spi_write(as->spi_dev, as->tx, 2);
+    if (status < 0) {
+        return status;
+    }
 
-    // // use write/read wrapper since CS needs to be de-selected every 16 bytes on this chip
-    // status = spi_write_then_read(as->spi_dev, as->tx, 2, as->rx, 2);
-    // if (status < 0) {
-    //     return status;
-    // }
-    // memcpy(&data_temp, as->rx, 2);
+	status = spi_read(as->spi_dev, as->rx, 2);
+	if (status < 0) {
+		return status;
+	}
+    memcpy(&data_temp, as->rx, 2);
 
-    // as->tx[0] = MSB_16(ANGLE_ADDR) | DIR_BIT;
-    // as->tx[1] = LSB_16(ANGLE_ADDR);
-    // status = spi_write_then_read(as->spi_dev, as->tx, 2, as->rx, 2);
-    // if (status < 0) {
-    //     return status;
-    // }
-    // memcpy(&data.angle, as->rx, 2);
-    // memcpy(&data.mag, &data_temp, 2);
+    as->tx[0] = MSB_16(ANGLE_ADDR) | DIR_BIT;
+    as->tx[1] = LSB_16(ANGLE_ADDR);
+    status = spi_write(as->spi_dev, as->tx, 2);
+    if (status < 0) {
+        return status;
+    }
 
-    // missing = copy_to_user(buf, &data, sizeof(struct position_data));
-    // if (missing == 0) {
-    //     return 0;
-    // } else {
-    //     return -EIO;
-    // }
+	status = spi_read(as->spi_dev, as->rx, 2);
+	if (status < 0) {
+		return status;
+	}
+    memcpy(&data.angle, as->rx, 2);
+    memcpy(&data.mag, &data_temp, 2);
+
+    missing = copy_to_user(buf, &data, sizeof(struct position_data));
+    if (missing == 0) {
+        return 0;
+    } else {
+        return -EIO;
+    }
 	return 0;
 }
 
 // fine grained commands for manipulating device config
-static ssize_t as5048_ioctl(struct file * filp, unsigned int cmd, unsigned long arg) {
+static long as5048_ioctl(struct file * filp, unsigned int cmd, unsigned long arg) {
     struct as_data *as;
 	struct as5048_reg_io io;
 	int status = 0;
 
 	pr_info("Inside as5048 ioctl handler.");
 
-    // if (_IOC_TYPE(cmd) != AS_MAGIC) {
-    //     return -ENOTTY;
-    // }
+    if (_IOC_TYPE(cmd) != AS_MAGIC) {
+        return -ENOTTY;
+    }
 
-    // as = filp->private_data;
-	// status = copy_from_user(&io, (struct as5048_reg_io __user *) arg, sizeof(struct as5048_reg_io));
+    as = filp->private_data;
+	status = copy_from_user(&io, (struct as5048_reg_io __user *) arg, sizeof(struct as5048_reg_io));
 
-	// if (status < 0) {
-	// 	return status;
-	// }
+	if (status < 0) {
+		return status;
+	}
 
-	// as->tx[0] = MSB_16(io.addr);
-	// as->tx[1] = LSB_16(io.addr);
+	as->tx[0] = MSB_16(io.addr);
+	as->tx[1] = LSB_16(io.addr);
 
-    // switch (cmd) {
-    //     case AS_W_REG:
-	// 		as->tx[0] &= ~(DIR_BIT);
-	// 		as->tx[3] = MSB_16(io.value);
-	// 		as->tx[4] = LSB_16(io.value);
-	// 		status = spi_write(as->spi_dev, as->tx, 4);
-    //         break;
-    //     case AS_R_REG:
-	// 		as->tx[0] |= DIR_BIT;
-	// 		status = spi_write_then_read(as->spi_dev, as->tx, 2, as->rx, 2);
-	// 		if (status == 0) {
-	// 			status = copy_to_user((void *)arg, as->rx, 2);
-	// 		}
-    //         break;
-    // }
+    switch (cmd) {
+        case AS_W_REG:
+			as->tx[0] &= ~(DIR_BIT);
+			as->tx[3] = MSB_16(io.value);
+			as->tx[4] = LSB_16(io.value);
+			status = spi_write(as->spi_dev, as->tx, 2);
+			if (status < 0) {
+				return status;
+			}
+			status = spi_write(as->spi_dev, &as->tx[2], 2);
+            break;
+        case AS_R_REG:
+			as->tx[0] |= DIR_BIT;
+			status = spi_write(as->spi_dev, as->tx, 2);
+			if (status < 0) {
+				return status;
+			}
+			status = spi_read(as->spi_dev, as->rx, 2);
+			if (status == 0) {
+				status = copy_to_user((void *)arg, as->rx, 2);
+			}
+            break;
+    }
 
 	return status;
 }
@@ -201,14 +221,12 @@ static int as5048_release(struct inode *inode, struct file *filp) {
 
 	pr_info("Inside as5048 close handler.");
 	as = filp->private_data;
-	filp->private_data = NULL;
 
 	kfree(as->tx);
 	as->tx = NULL;
 
 	kfree(as->rx);
 	as->rx = NULL;
-	kfree(as);
 	return 0;
 }
 
@@ -246,6 +264,14 @@ static int as5048_probe(struct spi_device *spi_dev) {
 	as = kzalloc(sizeof(struct as_data), GFP_KERNEL);
 	if (!as) {
 		return -ENOMEM;
+	}
+
+	// set up spi device to use mode 1
+	spi_dev->mode = SPI_CPHA;
+	status = spi_setup(spi_dev);
+	if (status < 0) {
+		kfree(as);
+		return status;
 	}
 
 	devt = MKDEV(AS_MAJOR, AS_FIRST_MINOR);
