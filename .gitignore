@@ -192,3 +192,4 @@ cython_debug/
 ### Project Specific Ignores ###
 */*/build
 *.vscode
+.local
