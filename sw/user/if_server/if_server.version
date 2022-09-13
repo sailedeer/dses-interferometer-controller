@@ -1,0 +1,2 @@
+#define server_client_VERSION_MAJOR @if_client_VERSION_MAJOR@
+#define server_client_VERSION_MINOR @if_client_VERSION_MINOR@
