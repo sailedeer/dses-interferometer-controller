@@ -183,36 +183,7 @@ struct lsm6ds032_reg_io {
 };
 
 #define LSM_MAGIC				    'l'
-	// lsm6ds032_accel_scale_t accel_scale;
-	// lsm6ds032_gyro_scale_t gyro_scale;
-	// lsm6ds032_odr_t accel_odr;
-	// lsm6ds032_odr_t gyro_odr;
-	// lsm6ds032_gyro_lpf_bw_t gyro_lpf_bw;
-#define LSM_R_REG					_IOR(LSM_MAGIC, 1, struct lsm6ds032_reg_io *)
-#define LSM_W_REG					_IOR(LSM_MAGIC, 2, struct lsm6ds032_reg_io *)
-
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-#define LSM_R_XL_SCALE				+IOR(LSM_MAGIC, 3, lsm6ds032_accel_scale_t)
-
-// #define LSM_R_ACCEL                 _IOR(LSM_MAGIC, 1, struct vector3d)
-
-// #define LSM_R_GYRO                  _IOR(LSM_MAGIC, 2, struct vector3d)
-
-// #define LSM_W_XL_CTRL				_IOW(LSM_MAGIC, 3, __u8)
-// #define LSM_R_XL_CTRL				_IOR(LSM_MAGIC, 3, __u8)
-
-// #define LSM_W_G_CTRL				_IOW(LSM_MAGIC, 4, __user void *)
-// #define LSM_R_G_CTRL				_IOR(LSM_MAGIC, 4, __u8)
-
-// #define LSM_POWER_DOWN				_IO(LSM_MAGIC, 5)
+#define LSM_R_REG					_IOWR(LSM_MAGIC, 1, struct lsm6ds032_reg_io *)
+#define LSM_W_REG					_IOWR(LSM_MAGIC, 2, struct lsm6ds032_reg_io *)
 
 #endif  // _LSM6DS032_H

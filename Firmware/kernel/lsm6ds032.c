@@ -205,6 +205,7 @@ static ssize_t lsm6ds032_read(struct file *filp, char __user *buf,
 // fine grained commands for manipulating device config
 static long lsm6ds032_ioctl(struct file * filp, unsigned int cmd, unsigned long arg) {
 	int status;
+    ssize_t missing;
 	struct lsm_data *lsm;
 	struct lsm6ds032_reg_io io;
 
@@ -213,12 +214,25 @@ static long lsm6ds032_ioctl(struct file * filp, unsigned int cmd, unsigned long 
 	}
 
 	lsm = filp->private_data;
-	status = copy_from_user(&io, (struct lsm6ds032_reg_io __user *) arg, sizeof(struct lsm6ds032_reg_io));
+	missing = copy_from_user(&io, (struct lsm6ds032_reg_io __user *) arg, sizeof(struct lsm6ds032_reg_io));
+    
+    if (missing > 0) {
+        return -EFAULT;
+    }
 
 	switch (cmd) {
-		case LSM_TXER:
+		case LSM_R_REG:
+            lsm->tx[0] = io.addr;
 			break;
+        case LSM_W_REG:
+            lsm->tx[0] = io.addr;
+            lsm->tx[1] = io.value;
+            status = spi_write(lsm->spi_dev, lsm->tx, 2);
+            break;
+        default:
+            status = -EFAULT;
 	}
+    return status;
 }
 
 static int lsm6ds032_release(struct inode *inode, struct file *filp) {
@@ -292,7 +306,7 @@ static int lsm6ds032_probe(struct spi_device *spi_dev) {
 
 	status = lsm6ds032_who_am_i(spi_dev);
 	if (status < 0) {
-		pr_info("Check wiring and connections with LSM6DS032.");
+		pr_err("Check wiring and connections with LSM6DS032.");
 		kfree(lsm);
 		return status;
 	}
