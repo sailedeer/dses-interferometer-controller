@@ -1,12 +1,12 @@
 #ifndef _LSM6DS032_H
 #define _LSM6DS032_H
 
-#include <linux/types.h>
 #include <linux/bits.h>
-#include <linux/ioctl.h>
 
-typedef __u8 lsm6ds032_reg_addr_t;
-typedef __u8 lsm6ds032_reg_value_t;
+#include <cstdint>
+
+typedef uint8_t lsm6ds032_reg_addr_t;
+typedef uint8_t lsm6ds032_reg_value_t;
 
 #define LSM6DS032_FUNC_CFG_ACCESS_ADDR  	0x01
 #define LSM6DS032_PIN_CTRL_ADDR 		 	0x02
@@ -167,9 +167,9 @@ typedef enum lsm_gyro_lpf_bw {
 #define LSM6DS032_STATUS_XLDA			BIT(0)
 
 struct vector3d {
-	__s16		x;
-	__s16		y;
-	__s16		z;
+	int16_t		x;
+	int16_t 	y;
+	int16_t		z;
 };
 
 struct motion_data {
@@ -182,8 +182,8 @@ struct lsm6ds032_reg_io {
 	lsm6ds032_reg_value_t		value;
 };
 
-#define LSM_MAGIC				    'l'
-#define LSM_R_REG					_IOWR(LSM_MAGIC, 1, struct lsm6ds032_reg_io *)
-#define LSM_W_REG					_IOWR(LSM_MAGIC, 2, struct lsm6ds032_reg_io *)
+struct lsm6ds032_config {
+
+};
 
 #endif  // _LSM6DS032_H

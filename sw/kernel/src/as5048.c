@@ -11,26 +11,8 @@
 #include <linux/uaccess.h>
 #include <linux/types.h>
 
-#include "as5048.h"
-
-#define MAN_DEV_NAME			"asm,as5048"
-#define DEV_NAME				"as5048"
-
-/*
-*   This major number falls into the local/experimental range
-*   as specified by the LANANA Device List here:
-*   http://mirrors.mit.edu/kernel/linux/docs/lanana/device-list/devices-2.6.txt
-*/
-#define AS_MAJOR				60
-#define AS_FIRST_MINOR			0
-#define N_MINORS				1
-
-#define BUFSIZE					8
-
-#define DIR_BIT					BIT(6)
-
-#define MSB_16(addr)			((addr & 0xFF00) >> 8)
-#define LSB_16(addr)			(addr & 0xFF)
+#include <as5048-dev.h>
+#include <as5048.h>
 
 struct as_data {
 	// character device instance for this device
@@ -82,14 +64,15 @@ static int as5048_open(struct inode *inode, struct file *filp) {
 }
 
 // write to arbitrary address
-static ssize_t as5048_write(struct file *filp, const char __user *buf,
-								size_t count, loff_t *poff) {
+static ssize_t as5048_write(
+	struct file *filp,
+	const char __user *buf,
+	size_t count, loff_t *poff
+) {
 	struct as_data *as;
 	ssize_t status = 0;
 	struct as5048_reg_io *io;
 	unsigned long missing;
-
-	pr_info("Inside as5048 write handler.");
 
 	if (count != sizeof(struct as5048_reg_io)) {
 		return -EMSGSIZE;
@@ -360,5 +343,3 @@ module_exit(as5048_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("as5048 Device Driver");
 MODULE_AUTHOR("sailedeer, sailedeer11@gmail.com");
-
-

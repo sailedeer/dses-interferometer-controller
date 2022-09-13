@@ -1,2 +1,0 @@
-#define if_client_VERSION_MAJOR @if_client_VERSION_MAJOR@
-#define if_client_VERSION_MINOR @if_client_VERSION_MINOR@

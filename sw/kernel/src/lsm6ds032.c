@@ -13,22 +13,6 @@
 
 #include "lsm6ds032.h"
 
-#define MAN_DEV_NAME			"st,lsm6ds032"
-#define DEV_NAME				"lsm6ds032"
-
-/*
-*   This major number falls into the local/experimental range
-*   as specified by the LANANA Device List here:
-*   http://mirrors.mit.edu/kernel/linux/docs/lanana/device-list/devices-2.6.txt
-*/
-#define LSM_MAJOR				61
-#define LSM_FIRST_MINOR			0
-#define N_MINORS				1
-
-#define BUFSIZE					128
-
-#define DIR_BIT					BIT(7)
-
 struct lsm_data {
 	// character device instance for this device
 	struct cdev 		char_dev;
@@ -39,7 +23,7 @@ struct lsm_data {
 	// tx/rx buffers
 	unsigned char		*tx;
 	unsigned char		*rx;
-	
+
 	// cached device config info
 	lsm6ds032_accel_scale_t accel_scale;
 	lsm6ds032_gyro_scale_t gyro_scale;
@@ -215,7 +199,7 @@ static long lsm6ds032_ioctl(struct file * filp, unsigned int cmd, unsigned long 
 
 	lsm = filp->private_data;
 	missing = copy_from_user(&io, (struct lsm6ds032_reg_io __user *) arg, sizeof(struct lsm6ds032_reg_io));
-    
+
     if (missing > 0) {
         return -EFAULT;
     }
@@ -399,5 +383,3 @@ module_exit(lsm6ds032_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("LSM6DS032 Device Driver");
 MODULE_AUTHOR("sailedeer, sailedeer11@gmail.com");
-
-

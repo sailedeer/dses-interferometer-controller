@@ -44,11 +44,11 @@ condition_variable asleep_cv;
 void imu_publisher(mqtt::async_client_ptr client /*, if::LSM6DS032_ptr imu */) {
     int random_int;
     bool local_die;
-    
+
     while (true) {
         {
             unique_lock<mutex> lk(asleep_mtx);
-            asleep_cv.wait(lk, [] { 
+            asleep_cv.wait(lk, [] {
                     return !asleep;
                 }
             );
@@ -74,11 +74,11 @@ void imu_publisher(mqtt::async_client_ptr client /*, if::LSM6DS032_ptr imu */) {
 void enc_publisher(mqtt::async_client_ptr client) {
     int random_int;
     bool local_die;
-    
+
     while (true) {
         {
             unique_lock<mutex> lk(asleep_mtx);
-            asleep_cv.wait(lk, [] { 
+            asleep_cv.wait(lk, [] {
                     return !asleep;
                 }
             );
@@ -104,8 +104,9 @@ void enc_publisher(mqtt::async_client_ptr client) {
 void command_processor(mqtt::async_client_ptr client) {
     mqtt::const_message_ptr msg;
     string msg_topic;
-    bool local_die = false;
-    bool local_asleep = true;
+    bool local_die { false };
+    bool local_asleep { true };
+
     while (true) {
         msg = client->consume_message();
         cout << "Processing new message..." <<endl;
@@ -114,6 +115,7 @@ void command_processor(mqtt::async_client_ptr client) {
         }
 
         msg_topic = msg->get_topic();
+        // TODO: write/find logging framework
         cout << "Received topic: " << msg_topic << endl;
         cout << "Message on received topic: " << msg->get_payload_str() << endl;
         if (msg_topic == SUB_TOPIC_AZ) {
@@ -176,7 +178,7 @@ int main(int argc, char **argv) {
     // use a smart pointer since we'll have several threads
     // since this is an async client, all operations are thread-safe
     auto client = make_shared<mqtt::async_client>(SERVER_ADDRESS, CLIENT_ID);
-    
+
     auto conn_opts = mqtt::connect_options_builder()
                     .clean_session(false)
                     .automatic_reconnect(chrono::seconds(2), chrono::seconds(30))
