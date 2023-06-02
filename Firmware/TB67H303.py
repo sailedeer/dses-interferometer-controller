@@ -52,6 +52,10 @@ class TB67H303:
     def get_uvlo(self):
         return GPIO.input(self.a2)
 
+    def command(self, inp):
+        self.setDir(1 if (inp > 0) else 0)
+        self.startMotor(abs(inp) * 100)
+
     #Constructor
     def __init__(self, stby, in1, in2, a1, a2, pwm):
         
