@@ -3,7 +3,7 @@ import serial
 import numpy as np
 
 import sys
-sys.path.append(".")
+sys.path.append("../drivers/")
 from LSM6DSO32 import LSM6DSO32
 
 dut = LSM6DSO32(0)

@@ -3,7 +3,7 @@
 #import the IMU and motor drivers
 import sys
 import argparse
-sys.path.append(".")
+sys.path.append("../drivers/")
 from LSM6DSO32 import LSM6DSO32
 from TB67H303 import TB67H303
 

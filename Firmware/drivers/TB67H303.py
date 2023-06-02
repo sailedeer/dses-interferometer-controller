@@ -46,8 +46,7 @@ class TB67H303:
 
     #return the state of the TSD/ISD alert output
     def get_tsd_isd(self):
-        return GPIO.input(self.a1)
-    
+        return GPIO.input(self.a1)   
     #return the state of the UVLO alert output
     def get_uvlo(self):
         return GPIO.input(self.a2)
@@ -85,5 +84,7 @@ class TB67H303:
     #Destructor
     def __del__(self):
         #Get rid of GPIO assignments
+        GPIO.setwarnings(False)
         GPIO.cleanup()
+        GPIO.setwarnings(True)
 

@@ -3,7 +3,7 @@
 #import the IMU and motor drivers
 import sys
 import argparse
-sys.path.append(".")
+sys.path.append("../drivers/")
 from LSM6DSO32 import LSM6DSO32
 from TB67H303 import TB67H303
 
@@ -32,19 +32,17 @@ elevation.coast() #don't want to start in the wrong direction
 
 period = 0.01
 ki = 0.001
-kp = 0.01
+kp = 0.03
 
 if(args.s):
     filename =  f"{args.target}-{kp}-{ki}-{period}-{time.time()}".replace('.', '_')
     f = open(datapath + filename + ".csv", "a")
-    #f.write("target: {target}\n"
-    #        "kp: {kp}\n"
-    #        "ki: {ki}\n"
-    #        "period: {period}")
         
 def moveto(target):
     p = 0
     i = 0
+    u = 0
+    u_last = 0
 
     while(True):
         angle = get_angle()
@@ -56,11 +54,21 @@ def moveto(target):
         if(abs(error) < 0.1):
             elevation.coast()
             return
-    
+        
+        u_last = u
         u = np.clip((p*kp + i*ki*period), -1, 1)
+        
+        #enforce an acceleration limit:
+        if(u - u_last > 0.02):
+            u = u_last + 0.02
+        elif(u_last - u > 0.02):
+            u = u_last - 0.02
+
         elevation.command(u)
 
         time.sleep(period)
 
 moveto(args.target)
-f.close()
+
+if(args.s):
+    f.close()

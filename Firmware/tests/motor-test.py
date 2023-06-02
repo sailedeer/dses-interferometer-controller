@@ -2,7 +2,7 @@
 
 #import the motor driver
 import sys
-sys.path.append(".") #motor driver directory
+sys.path.append("../drivers/") #motor driver directory
 from TB67H303 import TB67H303
 
 #create a motor driver object (azimuth motor on the dish controller PCB)
