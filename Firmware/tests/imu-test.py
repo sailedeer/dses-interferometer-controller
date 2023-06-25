@@ -4,7 +4,7 @@ import numpy as np
 
 #import the IMU driver
 import sys
-sys.path.append(".") #IMU directory
+sys.path.append("../drivers/") #IMU directory
 from LSM6DSO32 import LSM6DSO32
 
 dut = LSM6DSO32(0) #CS0

@@ -17,5 +17,7 @@ Both the dish control PCB and encoder PCB have been sent out to fab. The bill of
 ## Hardware Setup
 To view/edit the KiCAD schematic, with KiCAD 6 open, go to Preferences -> Configure Paths, and add a new environment variable called "EWB" that points to dses-interferometer-controller\Hardware\lib.
 
+The Raspberry Pi needs to be flashed with 64 bit Raspbian to work with Radioconda
+
 ## Simulation Setup
 Use Python 3.9.
