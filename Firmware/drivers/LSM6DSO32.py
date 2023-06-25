@@ -124,7 +124,7 @@ class LSM6DSO32:
         self.spi.open(self.bus, cs)
 
         #configure SPI
-        self.spi.max_speed_hz = 100000
+        self.spi.max_speed_hz = 200000
         self.spi.mode = 0
 
         #check to see if the device is communicating properly
