@@ -1,0 +1,2 @@
+10-25Mhz Multiplier Reference Design: http://www.hybridpretender.nl/25MHz%20out%2010MHz.pdf
+LNB Modification Blog Post: https://osmocom.org/projects/miscellaneous-projects/wiki/C_Band_LNB_Ext_Ref_Mod/12?fbclid=IwAR3RFDWsnBdg7iIVJZW0_vTI2_NmCojCVLv8dYtUX5L-tSlClXGxPAU2ZJM
